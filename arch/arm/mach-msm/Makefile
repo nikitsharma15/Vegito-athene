@@ -76,3 +76,10 @@ obj-$(CONFIG_ARCH_MSM8974) += msm_mpmctr.o
 
 obj-$(CONFIG_HAS_MACH_MEMUTILS) += memutils/
 obj-$(CONFIG_PERFMAP) += perfmap.o
+<<<<<<< HEAD
+=======
+obj-$(CONFIG_MMI_UNIT_INFO) += mmi-unit-info.o
+obj-$(CONFIG_MMI_SOC_INFO) += mmi_soc_info.o
+obj-$(CONFIG_LCD_KCAL) += shamu_kcal_ctrl.o
+obj-$(CONFIG_FORCE_FAST_CHARGE) += fastchg.o
+>>>>>>> f41a7a4... fast charge: initial adaptation for Shamu to work with qcom's quick charge 2.0
