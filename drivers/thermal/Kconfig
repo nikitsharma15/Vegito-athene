@@ -118,6 +118,7 @@ config LIMITS_LITE_HW
 	 supported by LMH Lite, their throttling intensity and the operating
 	 profiles.
 
+
 config THERMAL_MONITOR
 	bool "Monitor thermal state and limit CPU Frequency"
 	depends on THERMAL_TSENS8960 || THERMAL_TSENS8974
