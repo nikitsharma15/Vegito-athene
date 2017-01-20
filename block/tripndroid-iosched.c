@@ -193,14 +193,27 @@ static struct request *tripndroid_latter_request(struct request_queue *q, struct
 	return list_entry(rq->queuelist.next, struct request, queuelist);
 }
 
-static void *tripndroid_init_queue(struct request_queue *q)
+static int tripndroid_init_queue(struct request_queue *q, struct elevator_type *e)
 {
 	struct tripndroid_data *td;
+	struct elevator_queue *eq;
+
+	eq = elevator_alloc(q, e);
+	if (eq == NULL)
+		return -ENOMEM;
 
 	td = kmalloc_node(sizeof(*td), GFP_KERNEL, q->node);
-	if (!td)
-		return NULL;
 
+	if (td == NULL) {
+		kobject_put(&eq->kobj);
+		return -ENOMEM;
+	}
+	eq->elevator_data = td;
+
+	spin_lock_irq(q->queue_lock);
+	q->elevator = eq;
+	spin_unlock_irq(q->queue_lock);
+	
 	INIT_LIST_HEAD(&td->fifo_list[SYNC][READ]);
 	INIT_LIST_HEAD(&td->fifo_list[SYNC][WRITE]);
 	INIT_LIST_HEAD(&td->fifo_list[ASYNC][READ]);
@@ -213,7 +226,7 @@ static void *tripndroid_init_queue(struct request_queue *q)
 	td->fifo_expire[ASYNC][WRITE] = async_write_expire;
 	td->fifo_batch = fifo_batch;
 
-	return td;
+	return 0;
 }
 
 static void tripndroid_exit_queue(struct elevator_queue *e)
@@ -259,4 +272,3 @@ module_exit(tripndroid_exit);
 MODULE_AUTHOR("TripNRaVeR");
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("TripNDroid IO Scheduler");
-
