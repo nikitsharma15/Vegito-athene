@@ -1,3 +1,4 @@
+
 /* Copyright (c) 2015, Varun Chitre <varun.chitre15@gmail.com>
  *
  * This software is licensed under the terms of the GNU General Public
@@ -135,7 +136,8 @@ static void tplug_input_event(struct input_handle *handle, unsigned int type,
 		unsigned int code, int value)
 {
 
-	if ((type == EV_KEY) && (code == BTN_TOUCH) && (value == 1) && touch_boost_enabled == 1)
+	if ((type == EV_KEY) && (code == BTN_TOUCH) && (value == 1)
+		&& touch_boost_enabled == 1 && tplug_hp_enabled == 1)
 	{
 		if(DEBUG)
 			pr_info("%s : touch boost\n", THUNDERPLUG);
@@ -261,8 +263,8 @@ static ssize_t thunderplug_hp_enabled_show(struct kobject *kobj, struct kobj_att
 static ssize_t __ref thunderplug_hp_enabled_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
 	int val;
-	sscanf(buf, "%d", &val);
 	int last_val = tplug_hp_enabled;
+	sscanf(buf, "%d", &val);
 	switch(val)
 	{
 		case 0:
@@ -572,3 +574,4 @@ MODULE_LICENSE("GPL and additional rights");
 MODULE_AUTHOR("Varun Chitre <varun.chitre15@gmail.com>");
 MODULE_DESCRIPTION("Hotplug driver for OctaCore CPU");
 late_initcall(thunderplug_init);
+
