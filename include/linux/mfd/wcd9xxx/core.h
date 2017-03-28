@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2015, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2016, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -274,7 +274,7 @@ struct wcd9xxx {
 	int (*post_reset)(struct wcd9xxx *wcd9xxx);
 
 	void *ssr_priv;
-	bool slim_device_bootup;
+	bool dev_up;
 
 	u32 num_of_supplies;
 	struct regulator_bulk_data *supplies;
@@ -307,9 +307,6 @@ struct wcd9xxx_reg_val {
 };
 
 int wcd9xxx_interface_reg_read(struct wcd9xxx *wcd9xxx, unsigned short reg);
-#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
-int wcd9xxx_reg_read_safe(struct wcd9xxx *wcd9xxx, unsigned short reg);
-#endif
 int wcd9xxx_interface_reg_write(struct wcd9xxx *wcd9xxx, unsigned short reg,
 		u8 val);
 int wcd9xxx_get_logical_addresses(u8 *pgd_la, u8 *inf_la);

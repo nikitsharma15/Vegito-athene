@@ -69,6 +69,7 @@ obj-$(CONFIG_MSM_OCMEM) += ocmem_sched.o ocmem_api.o ocmem_rdm.o ocmem_core.o
 
 obj-$(CONFIG_MSM_PERFORMANCE) += msm_performance.o
 obj-$(CONFIG_MSM_CORE_CTL_HELPER) += core_ctl_helper.o
+obj-$(CONFIG_MSM_CORE_CTL) += core_ctl.o
 
 ifdef CONFIG_MSM_SUBSYSTEM_RESTART
        obj-y += subsystem_notif.o
@@ -98,4 +99,3 @@ obj-$(CONFIG_BOOTINFO) += bootinfo.o
 obj-$(CONFIG_MMI_SOC_INFO) += mmi_soc_info.o
 obj-$(CONFIG_MMI_RAM_INFO) += mmi-ram-info.o
 obj-$(CONFIG_MMI_UNIT_INFO) += mmi-unit-info.o
-obj-$(CONFIG_MSM_HOTPLUG) += msm_hotplug.o

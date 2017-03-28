@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2016 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2017 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -16764,6 +16764,12 @@ WDI_ProcessInitScanRsp
                "Error returned WDI_ProcessInitScanRspi:%d BMPS%d",
                wdiStatus, pWDICtx->bInBmps);
   }
+  else
+  {
+     WPAL_TRACE(eWLAN_MODULE_DAL_CTRL, eWLAN_PAL_TRACE_LEVEL_ERROR,
+               "Error returned WDI_ProcessInitScanRspi:%d BMPS%d",
+               wdiStatus, pWDICtx->bInBmps);
+  }
 
   /*Notify UMAC*/
   wdiInitScanRspCb( wdiStatus, pWDICtx->pRspCBUserData);
@@ -18779,8 +18785,12 @@ WDI_ProcessStartOemDataRsp
     return WDI_STATUS_E_FAILURE;
   }
 
+  wpalMemoryZero(wdiOemDataRspParams->oemDataRsp, OEM_DATA_RSP_SIZE);
+
   /* Populate WDI structure members */
-  wpalMemoryCopy(wdiOemDataRspParams->oemDataRsp, halStartOemDataRspParams->oemDataRsp, OEM_DATA_RSP_SIZE);
+  wpalMemoryCopy(wdiOemDataRspParams->oemDataRsp,
+                 halStartOemDataRspParams->oemDataRsp,
+                 pEventData->uEventDataSize);
 
   /*Notify UMAC*/
   wdiOemDataRspCb(wdiOemDataRspParams, pWDICtx->pRspCBUserData);
@@ -22641,6 +22651,7 @@ WDI_RXMsgCTSCB
   }
 
   wdiEventData.wdiResponse = HAL_2_WDI_RSP_TYPE( pHalMsgHeader->msgType );
+  vos_log_wdi_event(wdiEventData.wdiResponse, VOS_WDI_READ);
 
   /*The message itself starts after the header*/
   wdiEventData.pEventData     = (wpt_uint8*)pMsg + sizeof(tHalMsgHeader);
@@ -28257,8 +28268,7 @@ WDI_ProcessReceiveFilterSetFilterReq
    if ( NULL == pBSSSes )
    {
        WPAL_TRACE( eWLAN_MODULE_DAL_CTRL, eWLAN_PAL_TRACE_LEVEL_ERROR,
-                 " %s : Association for this BSSID does not exist, filter Id =%d",
-                 __func__, pwdiSetRcvPktFilterReqInfo->wdiPktFilterCfg.filterId); // IKJB42MAIN-1244, Motorola, a19091
+                 " %s : Association for this BSSID does not exist",__func__);
        return WDI_STATUS_E_FAILURE; 
    }
 
@@ -28645,8 +28655,7 @@ WDI_ProcessReceiveFilterClearFilterReq
    if ( NULL == pBSSSes )
    {
        WPAL_TRACE( eWLAN_MODULE_DAL_CTRL, eWLAN_PAL_TRACE_LEVEL_ERROR,
-                 " %s : Association for this BSSID does not exist, filter ID = %d",
-                 __func__, pwdiRcvFltPktClearReqParamsType->filterClearParam.filterId); // IKJB42MAIN-1244, Motorola, a19091
+                 " %s : Association for this BSSID does not exist",__func__);
        return WDI_STATUS_E_FAILURE; 
    }
 

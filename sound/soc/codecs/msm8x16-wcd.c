@@ -1149,10 +1149,32 @@ static int __msm8x16_wcd_reg_read(struct snd_soc_codec *codec,
 	else if (MSM8X16_WCD_IS_DIGITAL_REG(reg)) {
 		mutex_lock(&pdata->cdc_mclk_mutex);
 		if (atomic_read(&pdata->mclk_enabled) == false) {
-			pdata->digital_cdc_clk.clk_val = pdata->mclk_freq;
-			ret = afe_set_digital_codec_core_clock(
+			switch (q6core_get_avs_version()) {
+			case Q6_SUBSYS_AVS2_6:
+			{
+				pdata->digital_cdc_clk.clk_val =
+						pdata->mclk_freq;
+				ret = afe_set_digital_codec_core_clock(
 					AFE_PORT_ID_PRIMARY_MI2S_RX,
 					&pdata->digital_cdc_clk);
+					break;
+			}
+			case Q6_SUBSYS_AVS2_7:
+			{
+				pdata->digital_cdc_core_clk.enable = 1;
+				ret = afe_set_lpass_clock_v2(
+					AFE_PORT_ID_PRIMARY_MI2S_RX,
+					&pdata->digital_cdc_core_clk);
+					break;
+			}
+			case Q6_SUBSYS_INVALID:
+			default:
+			{
+				pr_err("%s: unknown dsp image\n",
+							__func__);
+				break;
+			}
+			}
 			if (ret < 0) {
 				pr_err("failed to enable the MCLK\n");
 				goto err;
@@ -1201,9 +1223,26 @@ static int __msm8x16_wcd_reg_write(struct snd_soc_codec *codec,
 		if (atomic_read(&pdata->mclk_enabled) == false) {
 			pr_debug("enable MCLK for AHB write %s:\n", __func__);
 			pdata->digital_cdc_clk.clk_val = pdata->mclk_freq;
-			ret = afe_set_digital_codec_core_clock(
+			switch (q6core_get_avs_version()) {
+			case Q6_SUBSYS_AVS2_6:
+				pdata->digital_cdc_clk.clk_val =
+					pdata->mclk_freq;
+				ret = afe_set_digital_codec_core_clock(
 					AFE_PORT_ID_PRIMARY_MI2S_RX,
 					&pdata->digital_cdc_clk);
+				break;
+			case Q6_SUBSYS_AVS2_7:
+				pdata->digital_cdc_core_clk.enable = 1;
+				ret = afe_set_lpass_clock_v2(
+					AFE_PORT_ID_PRIMARY_MI2S_RX,
+					&pdata->digital_cdc_core_clk);
+				break;
+			case Q6_SUBSYS_INVALID:
+			default:
+				pr_err("%s: enable clk failed\n",
+							__func__);
+				break;
+			}
 			if (ret < 0) {
 				pr_err("failed to enable the MCLK\n");
 				ret = 0;
@@ -1238,23 +1277,10 @@ static int msm8x16_wcd_readable(struct snd_soc_codec *ssc, unsigned int reg)
 	return msm8x16_wcd_reg_readable[reg];
 }
 
-#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
-extern int snd_ctrl_enabled;
-extern int snd_hax_reg_access(unsigned int);
-extern unsigned int snd_hax_cache_read(unsigned int);
-extern void snd_hax_cache_write(unsigned int, unsigned int);
-#endif
-
-#ifndef CONFIG_SOUND_CONTROL_HAX_3_GPL 
-static
-#endif
-int msm8x16_wcd_write(struct snd_soc_codec *codec, unsigned int reg,
+static int msm8x16_wcd_write(struct snd_soc_codec *codec, unsigned int reg,
 			     unsigned int value)
 {
 	int ret;
-#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
-	int val;
-#endif
 	struct msm8x16_wcd_priv *msm8x16_wcd = snd_soc_codec_get_drvdata(codec);
 
 	dev_dbg(codec->dev, "%s: Write from reg 0x%x val 0x%x\n",
@@ -1274,32 +1300,10 @@ int msm8x16_wcd_write(struct snd_soc_codec *codec, unsigned int reg,
 				reg);
 		return -ENODEV;
 	} else
-#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
-  		if (!snd_ctrl_enabled)
-  			return __msm8x16_wcd_reg_write(codec, reg, (u8)value);
-  
-  		if (!snd_hax_reg_access(reg)) {
-  			if (!((val = snd_hax_cache_read(reg)) != -1)) {
-  				val = wcd9xxx_reg_read_safe(codec->control_data, reg);
-  			}
-  		} else {
-  			snd_hax_cache_write(reg, value);
-  			val = value;
-  		}
- 		return __msm8x16_wcd_reg_write(codec, reg, val);
-#else
 		return __msm8x16_wcd_reg_write(codec, reg, (u8)value);
-#endif
 }
 
-#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
-EXPORT_SYMBOL(msm8x16_wcd_write);
-#endif
-
-#ifndef CONFIG_SOUND_CONTROL_HAX_3_GPL 
-static
-#endif
-unsigned int msm8x16_wcd_read(struct snd_soc_codec *codec,
+static unsigned int msm8x16_wcd_read(struct snd_soc_codec *codec,
 				unsigned int reg)
 {
 	unsigned int val;
@@ -1339,11 +1343,6 @@ unsigned int msm8x16_wcd_read(struct snd_soc_codec *codec,
 					__func__, reg, val);
 	return val;
 }
-
-#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
-EXPORT_SYMBOL(msm8x16_wcd_read);
-#endif
- 
 
 static void msm8x16_wcd_boost_on(struct snd_soc_codec *codec)
 {
@@ -4590,17 +4589,12 @@ static int msm8x16_wcd_codec_enable_rx_chain(struct snd_soc_dapm_widget *w,
 
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
-		dev_dbg(w->codec->dev,
-			"%s: PMU:Sleeping 20ms after disabling mute\n",
-			__func__);
+		dev_dbg(w->codec->dev, "%s: [PMU]\n", __func__);
 		break;
 	case SND_SOC_DAPM_POST_PMD:
-		dev_dbg(w->codec->dev,
-			"%s: PMD:Sleeping 20ms after disabling mute\n",
-			__func__);
+		dev_dbg(w->codec->dev, "%s: [PMD]\n", __func__);
 		snd_soc_update_bits(codec, w->reg,
 			    1 << w->shift, 0x00);
-		msleep(20);
 		break;
 	}
 	return 0;
@@ -5389,13 +5383,6 @@ static void kfree_wcd_priv(struct msm8x16_wcd_priv *priv)
 	kfree(priv);
 }
 
-#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
-struct snd_soc_codec *fauxsound_codec_ptr;
-EXPORT_SYMBOL(fauxsound_codec_ptr);
-int wcd9xxx_hw_revision;
-EXPORT_SYMBOL(wcd9xxx_hw_revision);
-#endif
-
 static int msm8x16_wcd_codec_probe(struct snd_soc_codec *codec)
 {
 	struct msm8x16_wcd_priv *msm8x16_wcd_priv;
@@ -5406,12 +5393,6 @@ static int msm8x16_wcd_codec_probe(struct snd_soc_codec *codec)
 	int i, ret;
 
 	dev_dbg(codec->dev, "%s()\n", __func__);
-
-#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
-	pr_info("msm8x16_wcd codec probe...\n");
-	fauxsound_codec_ptr = codec;
-#endif
- 
 
 	msm8x16_wcd_priv = kzalloc(sizeof(struct msm8x16_wcd_priv), GFP_KERNEL);
 	if (!msm8x16_wcd_priv) {
@@ -5451,9 +5432,6 @@ static int msm8x16_wcd_codec_probe(struct snd_soc_codec *codec)
 		dev_dbg(codec->dev, "%s :Conga REV: %d\n", __func__,
 					msm8x16_wcd_priv->codec_version);
 		msm8x16_wcd_priv->ext_spk_boost_set = true;
-#ifdef CONFIG_SOUND_CONTROL_HAX_3_GPL
-		wcd9xxx_hw_revision = 1;
-#endif
 	} else {
 		dev_dbg(codec->dev, "%s :PMIC REV: %d\n", __func__,
 					msm8x16_wcd_priv->pmic_rev);
@@ -5624,6 +5602,7 @@ static int msm8x16_wcd_disable_static_supplies_to_optimum(
 
 int msm8x16_wcd_suspend(struct snd_soc_codec *codec)
 {
+	int ret = 0;
 	struct msm8916_asoc_mach_data *pdata = NULL;
 	struct msm8x16_wcd *msm8x16 = codec->control_data;
 	struct msm8x16_wcd_pdata *msm8x16_pdata = msm8x16->dev->platform_data;
@@ -5637,10 +5616,24 @@ int msm8x16_wcd_suspend(struct snd_soc_codec *codec)
 				&pdata->disable_mclk_work);
 		mutex_lock(&pdata->cdc_mclk_mutex);
 		if (atomic_read(&pdata->mclk_enabled) == true) {
-			pdata->digital_cdc_clk.clk_val = 0;
-			afe_set_digital_codec_core_clock(
+			switch (q6core_get_avs_version()) {
+			case Q6_SUBSYS_AVS2_6:
+				pdata->digital_cdc_clk.clk_val = 0;
+				ret = afe_set_digital_codec_core_clock(
 					AFE_PORT_ID_PRIMARY_MI2S_RX,
 					&pdata->digital_cdc_clk);
+				break;
+			case Q6_SUBSYS_AVS2_7:
+				pdata->digital_cdc_core_clk.enable = 0;
+				ret = afe_set_lpass_clock_v2(
+					AFE_PORT_ID_PRIMARY_MI2S_RX,
+					&pdata->digital_cdc_core_clk);
+				break;
+			case Q6_SUBSYS_INVALID:
+			default:
+				pr_err("%s: disable clk failed\n", __func__);
+				break;
+			}
 			atomic_set(&pdata->mclk_enabled, false);
 		}
 		mutex_unlock(&pdata->cdc_mclk_mutex);
@@ -5830,6 +5823,13 @@ static int msm8x16_wcd_spmi_probe(struct spmi_device *spmi)
 		return -EPROBE_DEFER;
 	}
 
+	ret = core_get_adsp_ver();
+	if (ret < 0) {
+		dev_err(&spmi->dev, "%s: Get adsp version failed %d\n",
+			__func__, ret);
+		ret = -EPROBE_DEFER;
+		goto rtn;
+	}
 	wcd_resource = spmi_get_resource(spmi, NULL, IORESOURCE_MEM, 0);
 	if (!wcd_resource) {
 		dev_err(&spmi->dev, "Unable to get Tombak base address\n");

@@ -813,13 +813,6 @@ config MSM_MEMORY_LOW_POWER_MODE
 	  The application processor controls whether memory should enter
 	  which low power mode.
 
-config FORCE_FAST_CHARGE
-	bool "Force faster charge rate for AC/USB"
-	default y
-	help
-	  This allows users to override default charge rate for both USB and AC
-	  charger input current
-
 choice
 	prompt "Default Memory Low Power Mode during Idle"
 	depends on MSM_MEMORY_LOW_POWER_MODE
@@ -932,12 +925,6 @@ config PM8XXX_RPC_VIBRATOR
 	  Enable the vibrator support on MSM over RPC. The vibrator
 	  is connected on the PM8XXX PMIC. Say Y if you want to enable
 	  this feature.
-
-config THUNDERPLUG_CONTROL
-	bool "Enable plugging down/up of cores using powersuspend"
-	help
-	  This driver uses powersuspend to take down the cpu cores
-	  on a octa core device.
 
 config SENSORS_ADSP
 	bool "Enable Sensors Driver Support for ADSP"
