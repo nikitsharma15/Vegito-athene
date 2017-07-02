@@ -721,6 +721,7 @@ static struct clk_freq_tbl ftbl_gcc_oxili_gfx3d_clk[] = {
 	F_SLEW( 465000000, 930000000,	  gpll3,	1,	0,	0),
 	F_SLEW( 500000000, 1000000000,	  gpll3,	1,	0,	0),
 	F_SLEW( 550000000, 1100000000,	  gpll3,	1,	0,	0),
+	F_SLEW( 600000000, 1200000000,	  gpll3,	1,	0,	0),
 	F_END
 };
 
@@ -735,7 +736,7 @@ static struct  rcg_clk gfx3d_clk_src = {
 		.ops = &clk_ops_rcg,
 		VDD_DIG_FMAX_MAP5(LOWER, 240000000, LOW, 400000000,
 				  NOMINAL, 465000000, NOM_PLUS, 500000000,
-				  HIGH, 550000000),
+				  HIGH, 600000000),
 		CLK_INIT(gfx3d_clk_src.c),
 	},
 };
